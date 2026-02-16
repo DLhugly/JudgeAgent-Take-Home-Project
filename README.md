@@ -19,10 +19,13 @@ echo "OPENROUTER_API_KEY=your-key-here" > .env
 brew install ffmpeg   # macOS
 # apt install ffmpeg  # Linux
 
-# 4. Start the server
+# 4. Build the frontend
+cd frontend && npm install && npm run build && cd ..
+
+# 5. Start the server
 uvicorn main:app --reload
 
-# 5. Open http://127.0.0.1:8000
+# 6. Open http://127.0.0.1:8000
 ```
 
 **CLI usage** (no server): `python run_judge.py video path/to/video.mp4`
