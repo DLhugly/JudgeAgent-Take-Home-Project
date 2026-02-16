@@ -1,5 +1,7 @@
+import { useState } from "react";
+
 export default function ResultCard({ data }) {
-  const { ai_detection: ai, virality, distribution, content_type } = data;
+  const { ai_detection: ai, virality, distribution, content_type, prompt_log } = data;
   const isAI = ai.prediction === "ai_generated";
   const pct = Math.round(ai.confidence * 100);
   const viralPct = Math.round(virality.score * 100);
@@ -111,7 +113,92 @@ export default function ResultCard({ data }) {
             </div>
           )}
         </div>
+
+        {/* Prompt Log */}
+        {prompt_log && <PromptLogSection log={prompt_log} />}
       </div>
+    </div>
+  );
+}
+
+function PromptLogSection({ log }) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <div className="border-t border-neutral-800/40 pt-5">
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2 text-left"
+      >
+        <svg
+          className={`h-4 w-4 text-neutral-500 transition-transform ${open ? "rotate-90" : ""}`}
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2}
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+        </svg>
+        <h3 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+          Prompt Log
+        </h3>
+        {log.total_tokens != null && (
+          <span className="ml-auto text-xs tabular-nums text-neutral-600">
+            {log.total_tokens.toLocaleString()} tokens
+          </span>
+        )}
+      </button>
+
+      {open && (
+        <div className="mt-4 space-y-4">
+          {/* Token summary */}
+          <div className="flex flex-wrap gap-4 text-xs">
+            <Stat label="Model" value={log.model} />
+            <Stat label="Frames sent" value={log.frames_sent} />
+            <Stat label="Audio clips sent" value={log.audio_clips_sent} />
+            {log.prompt_tokens != null && (
+              <Stat label="Prompt tokens" value={log.prompt_tokens.toLocaleString()} />
+            )}
+            {log.completion_tokens != null && (
+              <Stat label="Completion tokens" value={log.completion_tokens.toLocaleString()} />
+            )}
+            {log.total_tokens != null && (
+              <Stat label="Total tokens" value={log.total_tokens.toLocaleString()} />
+            )}
+          </div>
+
+          {/* System prompt */}
+          <LogBlock title="System Prompt" content={log.system_prompt} />
+
+          {/* User prompt */}
+          <LogBlock title="User Prompt" content={log.user_prompt} />
+
+          {/* Raw response */}
+          <LogBlock title="Raw LLM Response" content={log.raw_response} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="rounded-md bg-neutral-950/60 px-3 py-1.5">
+      <span className="text-neutral-500">{label}: </span>
+      <span className="font-medium text-neutral-300">{value}</span>
+    </div>
+  );
+}
+
+function LogBlock({ title, content }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wider text-neutral-600">
+        {title}
+      </p>
+      <pre className="max-h-48 overflow-auto rounded-lg bg-neutral-950 p-3 text-xs leading-relaxed text-neutral-400">
+        {content}
+      </pre>
     </div>
   );
 }

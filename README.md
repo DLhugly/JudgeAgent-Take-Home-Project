@@ -1,34 +1,58 @@
 # Judge Agent
 
-## What You Built
+## What I Built
 
-A FastAPI service with a demo frontend that exposes a judge agent for text and video. The agent uses a single Gemini 3 Flash call (via OpenRouter) per request to produce: (1) AI vs human origin prediction with confidence and explanation, (2) virality score 0–1 with explanation, and (3) distribution analysis (audience segments, platforms, reasons) with explanation. Video is handled by sampling frames with OpenCV and extracting audio with ffmpeg, then sending frames + audio in a single multimodal API call — the model sees the visuals and hears the speech natively.
+A video judge agent that evaluates whether video content is AI-generated or human-produced, scores its viral potential, and recommends distribution strategies. It works by extracting 20 frames (OpenCV) and 20 evenly-spaced 4-second audio clips (ffmpeg) from a video, then sending everything to Gemini 3 Flash in a single multimodal API call — the model sees the frames and hears the speech natively, no separate transcription step. The result is structured JSON with confidence scores, explanations, and audience segmentation. A React frontend with three sample videos (live-action, CGI, AI-generated) lets you try it immediately.
 
 ## How to Run
 
-1. Create a virtualenv and install deps: `python -m venv .venv`, `source .venv/bin/activate`, `pip install -r requirements.txt`
-2. Set `OPENROUTER_API_KEY` in the environment or in a `.env` file (get one at [openrouter.ai](https://openrouter.ai))
-3. Ensure `ffmpeg` is installed (for video audio extraction): `brew install ffmpeg` / `apt install ffmpeg`
-4. Start the server: `uvicorn main:app --reload`
-5. Open http://127.0.0.1:8000 for the demo UI (text input or video upload). API docs: http://127.0.0.1:8000/docs
+```bash
+# 1. Install Python dependencies
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
 
-CLI (no server): `python run_judge.py text "Some text"` or `python run_judge.py video path/to/video.mp4`
+# 2. Set your OpenRouter API key
+echo "OPENROUTER_API_KEY=your-key-here" > .env
+# Get one at https://openrouter.ai
+
+# 3. Ensure ffmpeg is installed (for audio extraction)
+brew install ffmpeg   # macOS
+# apt install ffmpeg  # Linux
+
+# 4. Start the server
+uvicorn main:app --reload
+
+# 5. Open http://127.0.0.1:8000
+```
+
+**CLI usage** (no server): `python run_judge.py video path/to/video.mp4`
+
+**Frontend development**:
+```bash
+cd frontend && npm install && npm run dev   # Vite dev server on :5173
+uvicorn main:app --reload                    # Backend on :8000
+```
 
 ## Assumptions
 
-1. OpenRouter API with Gemini 3 Flash is the LLM provider; API key is required. No local models.
-2. AI-origin detection is heuristic (LLM-based); no ground-truth labels or classifier training. Confidence is indicative, not calibrated.
-3. Video input is a single file (e.g. MP4); we sample 6 frames and extract the audio track. Both are sent to the model in one multimodal call — the model processes images and audio natively.
-4. Virality and distribution are judged from content only; no historical engagement data or platform APIs.
-5. Single LLM call per request; no multi-step agent or tool use.
-6. ffmpeg is required for audio extraction from video; if unavailable, video analysis falls back to frames only.
+1. **Single multimodal call**: One LLM call per video — 20 frames as images + 20 audio clips sent together. No multi-step agent or tool use.
+2. **Heuristic detection**: AI-origin detection is prompt-based (not a trained classifier). Confidence is indicative, not calibrated.
+3. **Visual evidence over transcript**: Human creators often use AI-written scripts, so the prompt weights visual artifacts more heavily than script style for origin detection.
+4. **Content-only analysis**: Virality and distribution are judged from the content itself — no historical engagement data or platform APIs.
+5. **ffmpeg required**: Audio extraction depends on ffmpeg. If unavailable, analysis falls back to frames only.
+6. **OpenRouter + Gemini 3 Flash**: Chosen for native multimodal support (images + audio in one call) at low cost via OpenRouter's unified API.
 
-One approach we considered was judging AI vs human origin from the video script (transcript) alone—e.g. whether the wording seemed human- or AI-written. A problem: even creative agencies and human content creators often use AI to draft or polish scripts, so a real human-made video can still have an AI-written script. Classifying by script alone would then misattribute the whole video. We therefore use frames plus audio together and let the judge reason over both, rather than reducing origin to script style.
+## What I Would Improve With More Time
 
-## What You Would Improve With More Time
+- **Container/bucket storage (S3)**: Store uploaded videos in cloud storage instead of processing them in-memory, enabling async processing and replay.
+- **User authentication and paywalls**: Add auth (OAuth/JWT), usage tiers, and rate limiting for a production API.
+- **Persistent database**: Store video metadata, classifications, and prompt logs in PostgreSQL for retrieval, analytics, and audit trails.
+- **Deeper video processing**: Extract more frames (50+), longer audio clips, use optical flow analysis for motion artifacts, and run multiple analysis passes.
+- **Stronger LLM models**: Use Claude or GPT-4o for higher-accuracy detection; ensemble multiple models and compare predictions.
+- **Prompt calibration**: Tune prompts against a labeled dataset and document confidence bounds per content type.
+- **Streaming/background jobs**: Queue long video processing with Celery/Redis, stream results via WebSocket for a better UX.
+- **Model swapping**: Support runtime model selection via environment variable since OpenRouter provides a unified API across providers.
 
-1. Calibrate or tune prompts with a small labeled set and document confidence bounds.
-2. Streaming or background jobs for large videos; rate limiting and caching for repeat inputs.
-3. Optional second pass (e.g. separate prompts per dimension) for clearer chain-of-thought and more stable outputs.
-4. Tests: unit tests for parsing and frame extraction; integration test with mocked API.
-5. Support swapping models via environment variable (e.g. Claude, GPT-4o) since OpenRouter provides a unified API.
+---
+
+[GitHub](https://github.com/DLhugly/) · [LinkedIn](https://www.linkedin.com/in/jameslhebert/)

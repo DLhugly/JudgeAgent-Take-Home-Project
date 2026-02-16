@@ -6,7 +6,7 @@ from pathlib import Path
 import cv2
 from openai import OpenAI
 
-from judge_agent.models import JudgeResult
+from judge_agent.models import JudgeResult, PromptLog
 from judge_agent.parse import parse_judge_response
 from judge_agent.prompts import VIDEO_JUDGE_SYSTEM, VIDEO_JUDGE_USER
 
@@ -169,12 +169,13 @@ def analyze_video(
             })
 
     # Add the text prompt last
+    user_prompt_text = VIDEO_JUDGE_USER.format(
+        n_frames=len(frames),
+        transcript=transcript_text,
+    )
     content.append({
         "type": "text",
-        "text": VIDEO_JUDGE_USER.format(
-            n_frames=len(frames),
-            transcript=transcript_text,
-        ),
+        "text": user_prompt_text,
     })
 
     response = client.chat.completions.create(
@@ -188,7 +189,23 @@ def analyze_video(
         response_format={"type": "json_object"},
     )
     raw_text = response.choices[0].message.content or "{}"
-    return parse_judge_response(raw_text, "video")
+
+    usage = response.usage
+    prompt_log = PromptLog(
+        model=model,
+        system_prompt=VIDEO_JUDGE_SYSTEM,
+        user_prompt=user_prompt_text,
+        raw_response=raw_text,
+        frames_sent=len(frames),
+        audio_clips_sent=len(audio_clips),
+        prompt_tokens=usage.prompt_tokens if usage else None,
+        completion_tokens=usage.completion_tokens if usage else None,
+        total_tokens=usage.total_tokens if usage else None,
+    )
+
+    result = parse_judge_response(raw_text, "video")
+    result.prompt_log = prompt_log
+    return result
 
 
 def analyze_video_bytes(

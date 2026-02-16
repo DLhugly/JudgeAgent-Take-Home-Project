@@ -29,8 +29,21 @@ class DistributionResult(BaseModel):
     explanation: str
 
 
+class PromptLog(BaseModel):
+    model: str = Field(description="LLM model used")
+    system_prompt: str = Field(description="System prompt sent to the model")
+    user_prompt: str = Field(description="User prompt / template sent to the model")
+    raw_response: str = Field(description="Raw text response from the model")
+    frames_sent: int = Field(default=0, description="Number of image frames sent")
+    audio_clips_sent: int = Field(default=0, description="Number of audio clips sent")
+    prompt_tokens: int | None = Field(default=None, description="Prompt token count")
+    completion_tokens: int | None = Field(default=None, description="Completion token count")
+    total_tokens: int | None = Field(default=None, description="Total token count")
+
+
 class JudgeResult(BaseModel):
     ai_detection: AIDetectionResult
     virality: ViralityResult
     distribution: DistributionResult
     content_type: str = Field(description="text or video")
+    prompt_log: PromptLog | None = Field(default=None, description="Raw prompt and token usage log")
