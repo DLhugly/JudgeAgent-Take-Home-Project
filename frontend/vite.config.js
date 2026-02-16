@@ -11,6 +11,9 @@ export default defineConfig({
       "/sample-natural.mp4": "http://127.0.0.1:8000",
       "/sample-cgi.mp4": "http://127.0.0.1:8000",
       "/sample-ai.mp4": "http://127.0.0.1:8000",
+      "/thumb-natural.jpg": "http://127.0.0.1:8000",
+      "/thumb-cgi.jpg": "http://127.0.0.1:8000",
+      "/thumb-ai.jpg": "http://127.0.0.1:8000",
     },
   },
   build: {

@@ -6,18 +6,21 @@ const SAMPLES = [
     key: "natural",
     label: "Natural (Live-Action)",
     file: "/sample-natural.mp4",
+    thumb: "/thumb-natural.jpg",
     desc: "Tears of Steel — real actors with VFX, has dialogue",
   },
   {
     key: "cgi",
     label: "CGI (Animated)",
     file: "/sample-cgi.mp4",
+    thumb: "/thumb-cgi.jpg",
     desc: "Elephants Dream — Blender 3D animated short with dialogue",
   },
   {
     key: "ai",
     label: "AI-Generated",
     file: "/sample-ai.mp4",
+    thumb: "/thumb-ai.jpg",
     desc: "Sora — wooly mammoths in a snowy landscape",
   },
 ];
@@ -26,6 +29,8 @@ export default function VideoPanel({ onResult, onError }) {
   const fileRef = useRef(null);
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState(null);
+  const [selectedSample, setSelectedSample] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingSample, setLoadingSample] = useState(null);
   const [dragOver, setDragOver] = useState(false);
@@ -41,6 +46,9 @@ export default function VideoPanel({ onResult, onError }) {
       });
       setFile(f);
       setFileName(sample.label);
+      setSelectedSample(sample.key);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(blob));
     } catch {
       onError("Could not load sample video.");
     } finally {
@@ -68,6 +76,9 @@ export default function VideoPanel({ onResult, onError }) {
     if (f) {
       setFile(f);
       setFileName(f.name);
+      setSelectedSample(null);
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+      setPreviewUrl(URL.createObjectURL(f));
     }
   }
 
@@ -86,23 +97,62 @@ export default function VideoPanel({ onResult, onError }) {
       <p className="mb-2 text-sm text-neutral-500">
         Pick a sample video or upload your own
       </p>
-      <div className="mb-4 grid gap-2 sm:grid-cols-3">
+      <div className="mb-4 grid gap-3 sm:grid-cols-3">
         {SAMPLES.map((s) => (
           <button
             key={s.key}
             onClick={() => loadSample(s)}
             disabled={loadingSample !== null}
-            className={`rounded-lg border px-3 py-2.5 text-left transition-colors ${
-              fileName === s.label
+            className={`group overflow-hidden rounded-lg border text-left transition-colors ${
+              selectedSample === s.key
                 ? "border-purple-500/50 bg-purple-500/10"
                 : "border-neutral-800 bg-neutral-900/40 hover:border-neutral-700 hover:bg-neutral-900/60"
             } disabled:opacity-50`}
           >
-            <p className="text-sm font-medium text-neutral-200">{s.label}</p>
-            <p className="mt-0.5 text-xs text-neutral-500">{s.desc}</p>
-            {loadingSample === s.key && (
-              <p className="mt-1 text-xs text-purple-400">Loading...</p>
-            )}
+            <div className="relative aspect-video w-full overflow-hidden bg-neutral-800">
+              <video
+                src={s.file}
+                poster={s.thumb}
+                muted
+                playsInline
+                preload="metadata"
+                onMouseEnter={(e) => e.target.play().catch(() => {})}
+                onMouseLeave={(e) => {
+                  e.target.pause();
+                  e.target.currentTime = 0;
+                }}
+                className="h-full w-full object-cover"
+              />
+              {loadingSample === s.key && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                  <Spinner />
+                  <span className="ml-2 text-xs text-purple-300">
+                    Loading...
+                  </span>
+                </div>
+              )}
+              {selectedSample === s.key && loadingSample !== s.key && (
+                <div className="absolute right-2 top-2 rounded-full bg-purple-600 p-1">
+                  <svg
+                    className="h-3 w-3 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={3}
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="m4.5 12.75 6 6 9-13.5"
+                    />
+                  </svg>
+                </div>
+              )}
+            </div>
+            <div className="px-3 py-2.5">
+              <p className="text-sm font-medium text-neutral-200">{s.label}</p>
+              <p className="mt-0.5 text-xs text-neutral-500">{s.desc}</p>
+            </div>
           </button>
         ))}
       </div>
@@ -136,7 +186,7 @@ export default function VideoPanel({ onResult, onError }) {
           />
         </svg>
         <p className="text-sm text-neutral-400">
-          {file && !SAMPLES.some((s) => s.label === fileName) ? (
+          {file && !selectedSample ? (
             <span className="text-neutral-200">{fileName}</span>
           ) : (
             <>
@@ -156,7 +206,19 @@ export default function VideoPanel({ onResult, onError }) {
         />
       </div>
 
-      {/* Selected + Evaluate */}
+      {/* Video preview + Evaluate */}
+      {previewUrl && (
+        <div className="mt-5">
+          <video
+            key={previewUrl}
+            src={previewUrl}
+            controls
+            playsInline
+            className="w-full rounded-lg border border-neutral-800"
+          />
+        </div>
+      )}
+
       {file && (
         <div className="mt-4 flex items-center gap-3">
           <button
@@ -168,9 +230,7 @@ export default function VideoPanel({ onResult, onError }) {
             {loading ? "Evaluating..." : "Evaluate Video"}
           </button>
           {fileName && (
-            <span className="text-sm text-neutral-500">
-              {fileName}
-            </span>
+            <span className="text-sm text-neutral-500">{fileName}</span>
           )}
         </div>
       )}

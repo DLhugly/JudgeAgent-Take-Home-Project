@@ -120,5 +120,15 @@ async def sample_video(name: str) -> FileResponse:
     return FileResponse(path, media_type="video/mp4")
 
 
+@app.get("/thumb-{name}.jpg")
+async def sample_thumb(name: str) -> FileResponse:
+    if name not in ("natural", "cgi", "ai"):
+        raise HTTPException(status_code=404)
+    path = _static_dir / f"thumb-{name}.jpg"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Thumbnail not found")
+    return FileResponse(path, media_type="image/jpeg")
+
+
 if _static_dir.exists():
     app.mount("/assets", StaticFiles(directory=_static_dir / "assets"), name="static-assets")
