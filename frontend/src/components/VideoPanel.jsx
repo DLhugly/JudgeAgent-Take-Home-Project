@@ -110,17 +110,9 @@ export default function VideoPanel({ onResult, onError }) {
             } disabled:opacity-50`}
           >
             <div className="relative aspect-video w-full overflow-hidden bg-neutral-800">
-              <video
-                src={s.file}
-                poster={s.thumb}
-                muted
-                playsInline
-                preload="metadata"
-                onMouseEnter={(e) => e.target.play().catch(() => {})}
-                onMouseLeave={(e) => {
-                  e.target.pause();
-                  e.target.currentTime = 0;
-                }}
+              <img
+                src={s.thumb}
+                alt={s.label}
                 className="h-full w-full object-cover"
               />
               {loadingSample === s.key && (
