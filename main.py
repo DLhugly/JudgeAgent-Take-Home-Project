@@ -7,7 +7,9 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from fastapi import FastAPI, File, Form, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from scalar_fastapi import get_scalar_api_reference
 
@@ -18,6 +20,13 @@ app = FastAPI(
     title="Judge Agent",
     description="Evaluates text and video content for origin, virality, and distribution.",
     docs_url=None,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -89,9 +98,27 @@ async def judge_video(
 async def health() -> dict:
     return {"status": "ok"}
 
+
+_static_dir = Path(__file__).parent / "static"
+
+
 @app.get("/")
 async def index() -> FileResponse:
-    path = Path(__file__).parent / "static" / "index.html"
+    path = _static_dir / "index.html"
     if not path.exists():
-        raise HTTPException(status_code=404, detail="Frontend not found")
+        raise HTTPException(status_code=404, detail="Frontend not found. Run: cd frontend && npm run build")
     return FileResponse(path)
+
+
+@app.get("/sample-{name}.mp4")
+async def sample_video(name: str) -> FileResponse:
+    if name not in ("natural", "cgi", "ai"):
+        raise HTTPException(status_code=404)
+    path = _static_dir / f"sample-{name}.mp4"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Sample video not found")
+    return FileResponse(path, media_type="video/mp4")
+
+
+if _static_dir.exists():
+    app.mount("/assets", StaticFiles(directory=_static_dir / "assets"), name="static-assets")

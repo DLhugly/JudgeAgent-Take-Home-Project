@@ -10,7 +10,7 @@ const VIDEO_STEPS = [
   },
   {
     label: "Extract Frames & Audio",
-    detail: "OpenCV samples 6 frames, ffmpeg extracts audio as WAV",
+    detail: "OpenCV samples 20 frames, ffmpeg extracts 20 audio clips (4s each)",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09ZM18.259 8.715 18 9.75l-.259-1.035a3.375 3.375 0 0 0-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 0 0 2.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 0 0 2.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 0 0-2.455 2.456Z" />
@@ -55,10 +55,10 @@ export default function Pipeline() {
           How it works
         </h2>
         <p className="mb-8 text-sm text-neutral-400">
-          The video pipeline extracts visual frames and the raw audio track,
-          then sends everything to a multimodal LLM in a single call — the
-          model sees the frames <em>and</em> hears the speech natively. No
-          separate transcription step.
+          The video pipeline samples 20 frames and extracts 20 evenly-spaced
+          4-second audio clips, then sends everything to a multimodal LLM in a
+          single call — the model sees the frames <em>and</em> hears the speech
+          natively. No separate transcription step.
         </p>
 
         {/* Steps */}
@@ -80,8 +80,8 @@ export default function Pipeline() {
         </div>
 
         <p className="mt-6 text-xs text-neutral-600">
-          Text input follows a simpler path — text goes directly to the LLM,
-          same three-dimension output.
+          For short videos (&lt;80s), the full audio track is sent instead of
+          clips.
         </p>
       </div>
     </section>
